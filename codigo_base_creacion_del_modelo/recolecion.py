@@ -7,7 +7,7 @@ import threading
 #configuracion
 
 MUESTRAS_POR_PALABRA = 50 #la primera vez toma 50 ,luego se van sumadon :)
-ARCHIVO = "vocales.csv"
+ARCHIVO = "data.csv"
 
 # definimos funciones 
 
@@ -85,20 +85,47 @@ imprimir_clases(clases_existentes, conteo_existente)
 mp_hands = mp.solutions.hands
 mp_drawing = mp.solutions.drawing_utils
 
-# estilo de puntos de la mano
+# estilo de puntos de la mano en formato de diccionario 
+estilo_puntos = {
+    0: mp_drawing.DrawingSpec(color=(255, 255, 255,), thickness=3, circle_radius=4), #muñeca blanca
 
-estilo_puntos = mp_drawing.DrawingSpec(
-    color = (0, 255, 255),
-    thickness =2,
-    circle_radius=5
+    # dedo pulgar 
+    1: mp_drawing.DrawingSpec(color=(0  , 0  , 255,), thickness=5, circle_radius=2), #1-4 son pulgar rojo
+    2: mp_drawing.DrawingSpec(color=(0  , 0  , 255,), thickness=5, circle_radius=2), #1-4 son pulgar rojo
+    3: mp_drawing.DrawingSpec(color=(0  , 0  , 255,), thickness=5, circle_radius=2), #1-4 son pulgar rojo
+    4: mp_drawing.DrawingSpec(color=(0  , 0  , 255,), thickness=5, circle_radius=2), #1-4 son pulgar rojo
+    
+    #dedo indice 
+    5: mp_drawing.DrawingSpec(color=(0  , 255 , 0,), thickness=5, circle_radius=2), #5-8 son indice verde
+    6: mp_drawing.DrawingSpec(color=(0  , 255 , 0,), thickness=5, circle_radius=2), #5-8 son indice verde
+    7: mp_drawing.DrawingSpec(color=(0  , 255 , 0,), thickness=5, circle_radius=2), #5-8 son indice verde
+    8: mp_drawing.DrawingSpec(color=(0  , 255 , 0,), thickness=5, circle_radius=2), #5-8 son indice verde
+
+    #dedo medio 
+    9: mp_drawing.DrawingSpec(color=(0  , 255 , 255,), thickness=5, circle_radius=2), #9-12 son dedo del medio amarillo
+    10: mp_drawing.DrawingSpec(color=(0  , 255 , 255,), thickness=5, circle_radius=2), #9-12 son dedo del medio amarillo
+    11: mp_drawing.DrawingSpec(color=(0  , 255 , 255,), thickness=5, circle_radius=2), #9-12 son dedo del medio amarillo
+    12: mp_drawing.DrawingSpec(color=(0  , 255 , 255,), thickness=5, circle_radius=2), #9-12 son dedo del medio amarillo
+
+    # dedo anular
+    13: mp_drawing.DrawingSpec(color=(128  , 0 , 128,), thickness=5, circle_radius=2), #13-16 son anular morado
+    14: mp_drawing.DrawingSpec(color=(128  , 0 , 128,), thickness=5, circle_radius=2), #13-16 son anular morado
+    15: mp_drawing.DrawingSpec(color=(128  , 0 , 128,), thickness=5, circle_radius=2), #13-16 son anular morado
+    16: mp_drawing.DrawingSpec(color=(128  , 0 , 128,), thickness=5, circle_radius=2), #13-16 son anular morado
+
+    #dedo meñique
+    17: mp_drawing.DrawingSpec(color=(255  , 255 , 0,), thickness=5, circle_radius=2), #17-20 son meñique azul
+    18: mp_drawing.DrawingSpec(color=(255  , 255 , 0,), thickness=5, circle_radius=2), #17-20 son meñique azul
+    19: mp_drawing.DrawingSpec(color=(255  , 255 , 0,), thickness=5, circle_radius=2), #17-20 son meñique azul
+    20: mp_drawing.DrawingSpec(color=(255  , 255 , 0,), thickness=5, circle_radius=2), #17-20 son meñique azul
+
+}
+
+estilo_coneccion = mp_drawing.DrawingSpec(
+    color=(0, 0, 0 ),
+    thickness=2,
 )
 
-#estilo de las lineas entre los puntos 
-estilo_conexiones = mp_drawing.DrawingSpec(
-    color=(255, 0, 255),
-    thickness=3,
-    circle_radius=2
-)
 
 hands = mp_hands.Hands(
     static_image_mode=False,
@@ -196,12 +223,12 @@ while True:
         hand = resultado.multi_hand_landmarks [0]
 
         mp_drawing.draw_landmarks(
-             frame,
-             hand,
-             mp_hands.HAND_CONNECTIONS,
-             estilo_puntos,
-             estilo_conexiones
-             )
+         image=frame,
+         landmark_list = hand,#para que no se vean ninguno pon landmark_list=[]
+         connections=mp_hands.HAND_CONNECTIONS, #No lineas cambiar esta linea por connections=[]
+         landmark_drawing_spec =estilo_puntos ,
+         connection_drawing_spec= estilo_coneccion# si no quieres las lineas borras esta linea
+        )
 
         if (palabra is not None 
             and c < MUESTRAS_POR_PALABRA):
