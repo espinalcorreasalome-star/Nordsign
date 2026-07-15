@@ -1,0 +1,10 @@
+, Pred_A, Pred_B, Pred_C, Pred_E, Pred_I, Pred_I_LOVE_YOU, Pred_O, Pred_U, Pred_i_love_you
+ Real_A,40,0,0,0,0,0,0,0,0
+ Real_B,0,40,0,0,0,0,0,0,0
+ Real_C,0,0,40,0,0,0,0,0,0
+ Real_E,0,0,0,40,0,0,0,0,0
+ Real_I,0,0,0,0,40,0,0,0,0
+ Real_I_LOVE_YOU,0,0,0,0,0,40,0,0,0
+ Real_O,0,0,0,0,0,0,40,0,0
+ Real_U,0,0,0,0,0,0,0,40,0
+ Real_i_love_you,0,0,0,0,0,0,0,0,20
