@@ -1,7 +1,6 @@
 import math
 #validaciones geometricas para lasic
 
-
 #Umbrales 
 
 #letra b:

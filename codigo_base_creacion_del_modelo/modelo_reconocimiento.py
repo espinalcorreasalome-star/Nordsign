@@ -1,67 +1,200 @@
+import os
+from collections import Counter, deque
+
 import cv2
 import mediapipe as mp
 import joblib
 import pandas as pd
 
+from validaciones import(
+    es_b_valida,
+)
+
 #configuracion
+BASE_DIR = os.path.dirname(
+    os.path.dirname(
+    os.path.abspath(__file__))
+)
 
-ARCHIVO_MODELO = "modelo_lsc.pkl"
-UMBRAL_CONFIANZA= 0.75 
+ARCHIVO_MODELO = os.path.join(
+     BASE_DIR,
+     "modelo_lsc.pkl"
+)
 
-# Cargar el paquete
-paquete= joblib.load(ARCHIVO_MODELO)
+PROCESAR_CADA_N_FRAMES= 3
+TAMANO_HISTORIAL =5
+
+# Cargar el modelo
+
+print("Carpeta principal:")
+print(BASE_DIR)
+
+print("\nBuscando modelo en:")
+print(ARCHIVO_MODELO)
+
+if not os.path.exists(ARCHIVO_MODELO):
+    raise FileNotFoundError(
+        "no se encontro el modelo.\n"
+        f"ruta buscada:\n{ARCHIVO_MODELO}"
+    )
+
+paquete= joblib.load(
+    ARCHIVO_MODELO
+)
+
+if not isinstance(paquete, dict):
+    raise TypeError(
+        "El archivo cargado no contiene "
+        "el paquete del modelo esperado."
+    )
+
+claves_necesarias = {
+    "modelo",
+    "columnas",
+    "clases"
+}
+
+claves_faltantes=(
+    claves_necesarias
+    - set(paquete.keys())
+)
+
+if claves_faltantes:
+    raise KeyError(
+        "al paquete del modelo le faltan estas claves:"
+        f"{claves_faltantes}"
+    )
 
 #sacamos los elementos del diccionario 
 modelo = paquete["modelo"]
 columnas = paquete["columnas"]
 clases =paquete["clases"]
-configuracion = paquete["configuracion"]
-metricas = paquete["metricas"]
 
 print("modelo cargado adecuadamente")
-print("\n clases guardadas: {clases}")
-
-print(
-    "precision de prueba guardada:"
-    f"{metricas['accuracy_test']*100:.2f}%"
-)
+print("\n clases aprendidas: {clases}")
+print(f"Características esperadas: {len(columnas)}")
 	
 #configuracion mediapipe
 mp_hands = mp.solutions.hands
 mp_drawing=mp.solutions.drawing_utils
 
 estilo_puntos = {
-    0: mp_drawing.DrawingSpec(color=(255, 255, 255,), thickness=2, circle_radius=2), #muñeca blanca
+     # Muñeca: blanco
+    0: mp_drawing.DrawingSpec(
+        color=(255, 255, 255),
+        thickness=2,
+        circle_radius=2
+    ),
 
-   # dedo pulgar 
-    1: mp_drawing.DrawingSpec(color=(0  , 0  , 255,), thickness=5, circle_radius=2), #1-4 son pulgar rojo
-    2: mp_drawing.DrawingSpec(color=(0  , 0  , 255,), thickness=5, circle_radius=2), #1-4 son pulgar rojo
-    3: mp_drawing.DrawingSpec(color=(0  , 0  , 255,), thickness=5, circle_radius=2), #1-4 son pulgar rojo
-    4: mp_drawing.DrawingSpec(color=(0  , 0  , 255,), thickness=5, circle_radius=2), #1-4 son pulgar rojo
-    
-    #dedo indice 
-    5: mp_drawing.DrawingSpec(color=(0  , 255 , 0,), thickness=5, circle_radius=2), #5-8 son indice verde
-    6: mp_drawing.DrawingSpec(color=(0  , 255 , 0,), thickness=5, circle_radius=2), #5-8 son indice verde
-    7: mp_drawing.DrawingSpec(color=(0  , 255 , 0,), thickness=5, circle_radius=2), #5-8 son indice verde
-    8: mp_drawing.DrawingSpec(color=(0  , 255 , 0,), thickness=5, circle_radius=2), #5-8 son indice verde
+    # Pulgar: rojo
+    1: mp_drawing.DrawingSpec(
+        color=(0, 0, 255),
+        thickness=5,
+        circle_radius=2
+    ),
+    2: mp_drawing.DrawingSpec(
+        color=(0, 0, 255),
+        thickness=5,
+        circle_radius=2
+    ),
+    3: mp_drawing.DrawingSpec(
+        color=(0, 0, 255),
+        thickness=5,
+        circle_radius=2
+    ),
+    4: mp_drawing.DrawingSpec(
+        color=(0, 0, 255),
+        thickness=5,
+        circle_radius=2
+    ),
 
-    #dedo medio 
-    9: mp_drawing.DrawingSpec(color=(0  , 255 , 255,), thickness=5, circle_radius=2), #9-12 son dedo del medio amarillo
-    10: mp_drawing.DrawingSpec(color=(0  , 255 , 255,), thickness=5, circle_radius=2), #9-12 son dedo del medio amarillo
-    11: mp_drawing.DrawingSpec(color=(0  , 255 , 255,), thickness=5, circle_radius=2), #9-12 son dedo del medio amarillo
-    12: mp_drawing.DrawingSpec(color=(0  , 255 , 255,), thickness=5, circle_radius=2), #9-12 son dedo del medio amarillo
+    # Índice: verde
+    5: mp_drawing.DrawingSpec(
+        color=(0, 255, 0),
+        thickness=5,
+        circle_radius=2
+    ),
+    6: mp_drawing.DrawingSpec(
+        color=(0, 255, 0),
+        thickness=5,
+        circle_radius=2
+    ),
+    7: mp_drawing.DrawingSpec(
+        color=(0, 255, 0),
+        thickness=5,
+        circle_radius=2
+    ),
+    8: mp_drawing.DrawingSpec(
+        color=(0, 255, 0),
+        thickness=5,
+        circle_radius=2
+    ),
 
-    # dedo anular
-    13: mp_drawing.DrawingSpec(color=(128  , 0 , 128,), thickness=5, circle_radius=2), #13-16 son anular morado
-    14: mp_drawing.DrawingSpec(color=(128  , 0 , 128,), thickness=5, circle_radius=2), #13-16 son anular morado
-    15: mp_drawing.DrawingSpec(color=(128  , 0 , 128,), thickness=5, circle_radius=2), #13-16 son anular morado
-    16: mp_drawing.DrawingSpec(color=(128  , 0 , 128,), thickness=5, circle_radius=2), #13-16 son anular morado
+    # Medio: amarillo
+    9: mp_drawing.DrawingSpec(
+        color=(0, 255, 255),
+        thickness=5,
+        circle_radius=2
+    ),
+    10: mp_drawing.DrawingSpec(
+        color=(0, 255, 255),
+        thickness=5,
+        circle_radius=2
+    ),
+    11: mp_drawing.DrawingSpec(
+        color=(0, 255, 255),
+        thickness=5,
+        circle_radius=2
+    ),
+    12: mp_drawing.DrawingSpec(
+        color=(0, 255, 255),
+        thickness=5,
+        circle_radius=2
+    ),
 
-    #dedo meñique
-    17: mp_drawing.DrawingSpec(color=(255  , 255 , 0,), thickness=5, circle_radius=2), #17-20 son meñique azul
-    18: mp_drawing.DrawingSpec(color=(255  , 255 , 0,), thickness=5, circle_radius=2), #17-20 son meñique azul
-    19: mp_drawing.DrawingSpec(color=(255  , 255 , 0,), thickness=5, circle_radius=2), #17-20 son meñique azul
-    20: mp_drawing.DrawingSpec(color=(255  , 255 , 0,), thickness=5, circle_radius=2), #17-20 son meñique azul
+    # Anular: morado
+    13: mp_drawing.DrawingSpec(
+        color=(128, 0, 128),
+        thickness=5,
+        circle_radius=2
+    ),
+    14: mp_drawing.DrawingSpec(
+        color=(128, 0, 128),
+        thickness=5,
+        circle_radius=2
+    ),
+    15: mp_drawing.DrawingSpec(
+        color=(128, 0, 128),
+        thickness=5,
+        circle_radius=2
+    ),
+    16: mp_drawing.DrawingSpec(
+        color=(128, 0, 128),
+        thickness=5,
+        circle_radius=2
+    ),
+
+    # Meñique: cian
+    17: mp_drawing.DrawingSpec(
+        color=(255, 255, 0),
+        thickness=5,
+        circle_radius=2
+    ),
+    18: mp_drawing.DrawingSpec(
+        color=(255, 255, 0),
+        thickness=5,
+        circle_radius=2
+    ),
+    19: mp_drawing.DrawingSpec(
+        color=(255, 255, 0),
+        thickness=5,
+        circle_radius=2
+    ),
+    20: mp_drawing.DrawingSpec(
+        color=(255, 255, 0),
+        thickness=5,
+        circle_radius=2
+    )
 }
 
 estilo_coneccion = mp_drawing.DrawingSpec(
@@ -72,37 +205,151 @@ estilo_coneccion = mp_drawing.DrawingSpec(
 hands = mp_hands.Hands(
     static_image_mode= False,
     max_num_hands=1,
-    min_detection_confidence=0.7,
-    min_tracking_confidence=0.6
+    model_complexity=0, 
+    min_detection_confidence=0.70,
+    min_tracking_confidence=0.60
 )
 		
 # abrir camara
 cap = cv2.VideoCapture(0)
 
+cap.set(
+    cv2.CAP_PROP_FRAME_WIDTH,
+    640
+)
+
+cap.set(
+    cv2.CAP_PROP_FRAME_HEIGHT,
+    480
+)
+
+
 if not cap.isOpened():
-    print("no se pudo abrir la camara")
     hands.close()
-    raise SystemExit
+
+    raise RuntimeError(
+        "No se pudo abrir la cámara."
+    )
+
+#funciones del reconocimiento (●'◡'●)
+def extraer_landmarks(hand_landmarks):
+    datos = []
+
+    for landmark in hand_landmarks.landmark:
+        datos.extend([
+            landmark.x,
+            landmark.y,
+            landmark.z
+        ])
+
+    return datos
+    
+def  predecir_clase(hand_landmarks):
+    datos = extraer_landmarks(
+        hand_landmarks
+    )
+
+    if len(datos) != len(columnas):
+        raise ValueError(
+            "la cantidad de datos detectados no coincide"
+            "con las columnas del entrenamient.\n"
+            f"datos detectados:{len(datos)}\n"
+            f"columnas esperadas:{len(columnas)}"
+        )
+    
+    datos_df = pd.DataFrame(
+        [datos],
+        columns=columnas
+    )
+
+    clase_predicha = modelo.predict(
+        datos_df
+    )[0]
+
+    return str(
+        clase_predicha
+    ).strip().upper()
+
+#filtrado de b
+def aplicar_regla_b(  
+        clase_predicha,
+        hand_landmarks
+    ):
+    if clase_predicha == "B":
+
+        if es_b_valida(hand_landmarks):
+            return "B"
+
+        return "B INCORRECTA"
+    
+    return clase_predicha
+
+#estabilizar prediccion
+def obtener_resultado_estable(historial):
+    if not historial:
+        return "esperando"
+
+    conteo = Counter(
+        historial
+    )
+
+    resultado_mas_repetido = (
+        conteo.most_common(1)[0][0]
+    )
+
+    return resultado_mas_repetido
+
+#variables del programa 
+contador_frames = 0
+resultado_final = "ESPERANDO"
+historial_resultados = deque(
+    maxlen=TAMANO_HISTORIAL
+)
+
+
+print("\nReconocimiento iniciado.")
+print("Presiona ESC para salir.\n")
 
 #reconocimiento
 
 while True:
     ret, frame = cap.read()
     if not ret:
-        print("no se pudo capturar la imagen")
+        print(
+            "No se pudo capturar la imagen."
+        )
         break
 
-    frame = cv2.flip(frame, 1)
+    frame = cv2.flip(
+        frame,
+        1
+    )
 
     frame_rgb = cv2.cvtColor(
         frame,
         cv2.COLOR_BGR2RGB
     )
-    resultado = hands.process(frame_rgb)
-		
-    if resultado.multi_hand_landmarks:
 
-        hand = resultado.multi_hand_landmarks[0]
+    frame_rgb.flags.writeable = False
+
+    resultado_mediapipe = hands.process(
+        frame_rgb
+    )
+
+    frame_rgb.flags.writeable = True
+
+    contador_frames += 1
+
+    mano_visible = bool(
+        resultado_mediapipe.multi_hand_landmarks
+    )
+    
+    if mano_visible:
+
+        hand = ( 
+            resultado_mediapipe
+            .multi_hand_landmarks[0]
+        )
 
         mp_drawing.draw_landmarks(
             image= frame, 
@@ -112,91 +359,70 @@ while True:
             connection_drawing_spec= estilo_coneccion
         )
 		
-        #extraer las cordenadas
+        #ejecutar ramdom forest cada n frames
+        if (
+            contador_frames
+            % PROCESAR_CADA_N_FRAMES
+            == 0
+        ):
 
-        datos = []
-        for lm in hand.landmark:
-            datos.extend([
-                lm.x, 
-                lm.y, 
-                lm.z
-            ])
-		
-        #crea una fila con las mismas colimnas del entrenamiento 
-        datos_df = pd.DataFrame(
-            [datos],
-            columns=columnas
-        )
-		
-        #calculamos las probabilidades
-
-        probabilidades = modelo.predict_proba(
-            datos_df
-        )[0]
-
-        #buscar la posicion con mayor probabilidad
-        indice_mayor = probabilidades.argmax()
-
-        #obtenemos las pociciones de la clase
-        letra_predicha = modelo.classes_[
-            indice_mayor
-        ]
-		
-        #obtener confianza
-
-        confianza= probabilidades[
-            indice_mayor
-        ]
-
-        # aplicar el unbral de confianza
-        if confianza>= UMBRAL_CONFIANZA:
-
-            texto_resultado =(
-                f"{letra_predicha}"
-                f"{confianza * 100:.1f}%"
+            clase_modelo = predecir_clase(
+                hand
             )
 
-            color_texto = (0, 255, 0)
+            resultado_validado = aplicar_regla_b(
+                clase_modelo,
+                hand
+            )
+
+            historial_resultados.append(
+                resultado_validado
+            )
+
+            resultado_final = (
+                obtener_resultado_estable(
+                    historial_resultados
+                )
+            )
+        else:
+            historial_resultados.clear()
+            resultado_final = "SIN MANO"
+
+        if resultado_final in {
+              "SIN MANO",
+             "B INCORRECTA"
+         }:
+
+         # Rojo para advertencia
+          color_texto = (0, 0,255)
 
         else:
-
-            texto_resultado= (
-                f"No seguro"
-                f"{confianza*100:.1f}%"
-            )
-
-            color_texto=(0, 0, 255)
+           # Verde para clases reconocidas
+           color_texto = ( 0, 220,0 )
 
         cv2.putText(
             frame,
-            texto_resultado,
-            (30, 100),
+            resultado_final,
+            (20,80),
             cv2.FONT_HERSHEY_SIMPLEX,
             1.2,
             color_texto,
-            3
-        )
-
-    else:
-        cv2.putText(
-            frame,
-            "no se detecta una mano",
-            (30,50),
-            cv2.FONT_HERSHEY_SIMPLEX,
-            0.8,
-            (0, 0, 255),
-            2
-        ) 
+            4
+        )  
 
     cv2.imshow(
-        "Reconocimiento LSC",
-        frame
-    )
-	
-    if cv2.waitKey(1) & 0xFF == 27:
+     "LASIC - Reconocimiento LSC",
+     frame
+   )
+
+    tecla = cv2.waitKey(1) & 0xFF
+
+    if tecla== 27:
         break
   
 # cerrar todo 
 cap.release()
 cv2.destroyAllWindows()
 hands.close()
+
+print("reconocimiento terminado (●'◡'●)")
