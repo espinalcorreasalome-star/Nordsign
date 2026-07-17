@@ -4,10 +4,18 @@ import os
 import csv
 import threading
 
+BASE_DIR = os.path.dirname(
+    os.path.dirname(os.path.abspath(__file__))
+)
+ARCHIVO_CSV = os.path.join(
+    BASE_DIR, 
+    "archivos_csv", 
+    "data.csv"
+)
+
 #configuracion
 
 MUESTRAS_POR_PALABRA = 50 #la primera vez toma 50 ,luego se van sumadon :)
-ARCHIVO = "data.csv"
 
 # definimos funciones 
 
@@ -53,9 +61,9 @@ def imprimir_clases(clases, conteo):
 
 # creamos csv por si no existe :O
 
-if not os.path.exists(ARCHIVO):
+if not os.path.exists(ARCHIVO_CSV):
     with open(
-        ARCHIVO,
+        ARCHIVO_CSV,
         "w",
         newline="",
         encoding="utf-8"
@@ -76,7 +84,9 @@ if not os.path.exists(ARCHIVO):
         
 # mostrar clases existentes 
 
-clases_existentes, conteo_existente = (leer_clases_existentes(ARCHIVO))
+clases_existentes, conteo_existente = (
+    leer_clases_existentes(ARCHIVO_CSV)
+)
 
 imprimir_clases(clases_existentes, conteo_existente)
 
@@ -181,7 +191,7 @@ def hilo_consola():
 
           break
        if texto.lower() == "listar":
-         clases, conteo = leer_clases_existentes(ARCHIVO)
+         clases, conteo = leer_clases_existentes(ARCHIVO_CSV)
 
          imprimir_clases(clases, conteo)
          continue 
@@ -241,7 +251,7 @@ while True:
                              ])
             fila.append(palabra)
 
-            with open( ARCHIVO, "a", newline ="", encoding="utf-8") as f:
+            with open( ARCHIVO_CSV, "a", newline ="", encoding="utf-8") as f:
                writer = csv.writer(f) 
                writer.writerow(fila)
 
