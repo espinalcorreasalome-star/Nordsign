@@ -1,3 +1,4 @@
+import os
 import pandas as pd
 import joblib
 
@@ -14,10 +15,30 @@ from sklearn.metrics import (
     classification_report #
 )
 
+BASE_DIR = os.path.dirname(
+    os.path.dirname(os.path.abspath(__file__))
+)
+ARCHIVO_CSV = os.path.join(
+    BASE_DIR, 
+    "archivos_csv", 
+    "data.csv"
+)
+
+ARCHIVO_LANDMARKS = os.path.join(
+    BASE_DIR, 
+    "archivos_csv", 
+    "importancia_landmarks.csv"
+)
+ARCHIVO_MATRIZ = os.path.join(
+    BASE_DIR, 
+    "archivos_csv", 
+    "matriz_confusion_lasic.csv"
+)
+
+
 # configuracion 
 
-ARCHIVO_CSV = "data.csv"
-ARCHIVO_MODELO = "modelo_lsc.pkl"
+ARCHIVO_MODELO = os.path.join(BASE_DIR, "modelo_lsc.pkl")
 COLUMNA_ETIQUETA = "letra"
 
 TEST_SIZE = 0.20
@@ -85,7 +106,7 @@ print(f"Prueba: {len(X_test)} muestras")
 # creamos random forest 
 
 modelo = RandomForestClassifier(
-    n_estimators=500, # cantidad de arboles
+    n_estimators=300, # cantidad de arboles
     min_samples_split=4, # se necesitan minimo 4 muestras para dividir un nodo
     min_samples_leaf=2, # cada hoja debe conservar al menos 2 muestras
     class_weight="balanced", # intenta compensar clases con distintas cantidades
@@ -180,7 +201,7 @@ print(matriz_df)
 
 # gualdamos la matrisss
 matriz_df.to_csv(
-    "matriz_confusion_lasic.csv",
+    ARCHIVO_MATRIZ,
     encoding="utf-8"
 )
 
@@ -212,7 +233,7 @@ print("\n 15 caracteristicas mas importantes")
 print(importancias.head(15).to_string(index=  False))
 
 importancias.to_csv(
-    "importancia_landmarks.csv",
+    ARCHIVO_LANDMARKS,
     index=False,
     encoding="utf-8"
 )
