@@ -2,17 +2,12 @@ import os
 import pandas as pd
 import joblib
 
-from sklearn.ensemble import RandomForestClassifier #
+from sklearn.ensemble import RandomForestClassifier 
 
-from sklearn.model_selection import (
-    train_test_split, #
-    cross_val_score, #
-    StratifiedKFold, #
-)
+from sklearn.model_selection import train_test_split 
 from sklearn.metrics import (
-    accuracy_score, #
-    confusion_matrix, #
-    classification_report #
+    accuracy_score, 
+    confusion_matrix 
 )
 
 BASE_DIR = os.path.dirname(
@@ -23,18 +18,11 @@ ARCHIVO_CSV = os.path.join(
     "archivos_csv", 
     "data.csv"
 )
-
-ARCHIVO_LANDMARKS = os.path.join(
-    BASE_DIR, 
-    "archivos_csv", 
-    "importancia_landmarks.csv"
-)
 ARCHIVO_MATRIZ = os.path.join(
     BASE_DIR, 
     "archivos_csv", 
     "matriz_confusion_lasic.csv"
 )
-
 
 # configuracion 
 
@@ -43,6 +31,7 @@ COLUMNA_ETIQUETA = "letra"
 
 TEST_SIZE = 0.20
 SEMILLA = 42
+CANTIDAD_ARBOLES= 250
 	
 # Cargar datos
 
@@ -69,10 +58,19 @@ data[COLUMNA_ETIQUETA]=(
     data[COLUMNA_ETIQUETA]
     .astype(str)
     .str.strip()
+    .str.upper()
 )
 
 #eliminar las etiqutas que esten vacias
-data= data[data[COLUMNA_ETIQUETA] != ""]
+data= data[
+    data[COLUMNA_ETIQUETA] !=""
+] 
+print("\n muestra por clase")
+print(
+    data[COLUMNA_ETIQUETA]
+    .value_counts()
+    .sort_index()
+)
 
 #mostrar el conteo por clases 
 print("\nmuestra por clase")
@@ -85,6 +83,11 @@ y = data[COLUMNA_ETIQUETA]
 
 print(f"\n caracteristicas usadas:{X.shape[1]}")
 print(f"clases encontradas: {y.nunique()}")
+if X.shape[1] != 63:
+    raise ValueError(
+        "El dataset debe tener 63 características.\n"
+        f"Características encontradas: {X.shape[1]}"
+    )
 
 #stratified splitting : esto hace que la divicion de los datos mantenga su proporconalidad
 #por ejemplo tienes 50 muestras de A y 30 de B ,esto no dividira su mitad sino su proporcion
@@ -106,44 +109,9 @@ print(f"Prueba: {len(X_test)} muestras")
 # creamos random forest 
 
 modelo = RandomForestClassifier(
-    n_estimators=300, # cantidad de arboles
-    min_samples_split=4, # se necesitan minimo 4 muestras para dividir un nodo
-    min_samples_leaf=2, # cada hoja debe conservar al menos 2 muestras
-    class_weight="balanced", # intenta compensar clases con distintas cantidades
-    n_jobs= -1, # utiliza todos los núcleos disponibles
-    random_state= SEMILLA # permite reproducir el resultado
-)
-
-# Cross-Validation :evalua que tan generalizado esta el modelo
-#evita el overfitting o sobreajute para los q no sabemos ingles :(
-#en cristiano,esto asegura que no se memoris elos dtos sino que aprenda los patrones
-
-validacion = StratifiedKFold(
-    n_splits=5,
-    shuffle=True,
-    random_state=SEMILLA
-)
-
-puntajes_cv = cross_val_score(
-    modelo,
-    X,
-    y,
-    cv=validacion,
-    scoring="accuracy",
-    n_jobs=-1
-)
-
-print("\nvalidación cruzada")
-
-for numero, puntaje in enumerate(puntajes_cv, start=1):
-    print(f"división {numero}: {puntaje * 100:.2f}%")
-
-print(
-    f"promedio: {puntajes_cv.mean() * 100:.2f}%"
-)
-
-print(
-    f"variación: ±{puntajes_cv.std() * 100:.2f}%"
+    n_estimators=CANTIDAD_ARBOLES, # cantidad de arboles
+    random_state= SEMILLA ,# permite reproducir el resultado
+     n_jobs= -1 # utiliza todos los núcleos disponibles
 )
 
 # Entrenar
@@ -162,17 +130,6 @@ precision = accuracy_score(
 	
 print(f"\n evaluacion final")
 print (f"\n Precision: {precision*100:.2f}%")
-
-# resultados por clase (●'◡'●)
-print("\n resultados de clasificacion")
-
-print( classification_report(
-          y_test,
-          predicciones,
-          labels=modelo.classes_,
-          zero_division=0
-      )
-)
 
 # matriz de confucion
 # se diferencia del accuracy porque este da porcentajes abiertos y la matriz mide el rendimiento del moelo en clasificcion
@@ -214,30 +171,6 @@ for numero,clase in enumerate(
 ):
     print(f"{numero}. {clase}")
 
-#feature importanci 
-# es una tecnica que mide que tanto afecta una variable a la prediccion
-#nos sirve para :saber que cosas inluyen en la toma de deciciones y como filtrarlo despues 
-
-importancias= pd.DataFrame({
-    "caracteristica": X.columns,
-    "importancia": modelo.feature_importances_
-})
-
-importancias = importancias.sort_values(
-    by="importancia",
-    ascending= False
-)
-
-print("\n 15 caracteristicas mas importantes")
-
-print(importancias.head(15).to_string(index=  False))
-
-importancias.to_csv(
-    ARCHIVO_LANDMARKS,
-    index=False,
-    encoding="utf-8"
-)
-
 #guardar todo en un solo archivo 
 
 paquete_modelo={
@@ -245,16 +178,12 @@ paquete_modelo={
     "columnas":list( X.columns), # se guaarda el orden exacto de las colimnas
     "clases": list( modelo.classes_), # se guardan las clases literal como esten
     "configuracion":{   # se guarda la configuracion principal
-        "n_estimators": 500,
-        "min_samples_split":4,
-        "min_samples_leaf":2,
+        "n_estimators": CANTIDAD_ARBOLES,
         "test_size": TEST_SIZE,
         "random_state": SEMILLA
     },
     "metricas":{ # guardamos algunos resultados
-        "accuracy_test": float( precision),
-        "cross_validation_mean": float(puntajes_cv.mean()),
-        "cross_validation_std": float(puntajes_cv.std())
+        "accuracy_test": float( precision)
     }
 }
 
