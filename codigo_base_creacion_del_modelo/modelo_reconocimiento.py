@@ -1,5 +1,4 @@
 import os
-from collections import Counter, deque
 
 import cv2
 import mediapipe as mp
@@ -8,29 +7,21 @@ import pandas as pd
 
 from validaciones import(
     es_b_valida,
+    es_o_valida
 )
 
 #configuracion
 BASE_DIR = os.path.dirname(
     os.path.dirname(
-    os.path.abspath(__file__))
+        os.path.abspath(__file__)
+    )
 )
 
 ARCHIVO_MODELO = os.path.join(
-     BASE_DIR,
-     "modelo_lsc.pkl"
+    BASE_DIR,
+    "modelo_lsc.pkl"
 )
-
-PROCESAR_CADA_N_FRAMES= 3
-TAMANO_HISTORIAL =5
-
-# Cargar el modelo
-
-print("Carpeta principal:")
-print(BASE_DIR)
-
-print("\nBuscando modelo en:")
-print(ARCHIVO_MODELO)
+#cargamos el modelo
 
 if not os.path.exists(ARCHIVO_MODELO):
     raise FileNotFoundError(
@@ -48,32 +39,10 @@ if not isinstance(paquete, dict):
         "el paquete del modelo esperado."
     )
 
-claves_necesarias = {
-    "modelo",
-    "columnas",
-    "clases"
-}
-
-claves_faltantes=(
-    claves_necesarias
-    - set(paquete.keys())
-)
-
-if claves_faltantes:
-    raise KeyError(
-        "al paquete del modelo le faltan estas claves:"
-        f"{claves_faltantes}"
-    )
-
 #sacamos los elementos del diccionario 
 modelo = paquete["modelo"]
 columnas = paquete["columnas"]
-clases =paquete["clases"]
 
-print("modelo cargado adecuadamente")
-print("\n clases aprendidas: {clases}")
-print(f"Características esperadas: {len(columnas)}")
-	
 #configuracion mediapipe
 mp_hands = mp.solutions.hands
 mp_drawing=mp.solutions.drawing_utils
@@ -206,23 +175,12 @@ hands = mp_hands.Hands(
     static_image_mode= False,
     max_num_hands=1,
     model_complexity=0, 
-    min_detection_confidence=0.70,
-    min_tracking_confidence=0.60
+    min_detection_confidence=0.7,
+    min_tracking_confidence=0.6
 )
 		
 # abrir camara
 cap = cv2.VideoCapture(0)
-
-cap.set(
-    cv2.CAP_PROP_FRAME_WIDTH,
-    640
-)
-
-cap.set(
-    cv2.CAP_PROP_FRAME_HEIGHT,
-    480
-)
-
 
 if not cap.isOpened():
     hands.close()
@@ -231,93 +189,9 @@ if not cap.isOpened():
         "No se pudo abrir la cámara."
     )
 
-#funciones del reconocimiento (●'◡'●)
-def extraer_landmarks(hand_landmarks):
-    datos = []
-
-    for landmark in hand_landmarks.landmark:
-        datos.extend([
-            landmark.x,
-            landmark.y,
-            landmark.z
-        ])
-
-    return datos
-    
-def  predecir_clase(hand_landmarks):
-    datos = extraer_landmarks(
-        hand_landmarks
-    )
-
-    if len(datos) != len(columnas):
-        raise ValueError(
-            "la cantidad de datos detectados no coincide"
-            "con las columnas del entrenamient.\n"
-            f"datos detectados:{len(datos)}\n"
-            f"columnas esperadas:{len(columnas)}"
-        )
-    
-    datos_df = pd.DataFrame(
-        [datos],
-        columns=columnas
-    )
-
-    clase_predicha = modelo.predict(
-        datos_df
-    )[0]
-
-    return str(
-        clase_predicha
-    ).strip().upper()
-
-#filtrado de b
-def aplicar_regla_b(  
-        clase_predicha,
-        hand_landmarks
-    ):
-    if clase_predicha == "B":
-
-        if es_b_valida(hand_landmarks):
-            return "B"
-
-        return "B INCORRECTA"
-    
-    return clase_predicha
-
-#estabilizar prediccion
-def obtener_resultado_estable(historial):
-    if not historial:
-        return "esperando"
-
-    conteo = Counter(
-        historial
-    )
-
-    resultado_mas_repetido = (
-        conteo.most_common(1)[0][0]
-    )
-
-    return resultado_mas_repetido
-
-#variables del programa 
-contador_frames = 0
-resultado_final = "ESPERANDO"
-historial_resultados = deque(
-    maxlen=TAMANO_HISTORIAL
-)
-
-
-print("\nReconocimiento iniciado.")
-print("Presiona ESC para salir.\n")
-
-#reconocimiento
-
 while True:
     ret, frame = cap.read()
     if not ret:
-        print(
-            "No se pudo capturar la imagen."
-        )
         break
 
     frame = cv2.flip(
@@ -325,31 +199,18 @@ while True:
         1
     )
 
-    frame_rgb = cv2.cvtColor(
+    rgb = cv2.cvtColor(
         frame,
         cv2.COLOR_BGR2RGB
     )
 
-    frame_rgb.flags.writeable = False
-
-    resultado_mediapipe = hands.process(
-        frame_rgb
-    )
-
-    frame_rgb.flags.writeable = True
-
-    contador_frames += 1
-
-    mano_visible = bool(
-        resultado_mediapipe.multi_hand_landmarks
+    resultado = hands.process(
+        rgb
     )
     
-    if mano_visible:
+    if resultado.multi_hand_landmarks:
 
-        hand = ( 
-            resultado_mediapipe
-            .multi_hand_landmarks[0]
-        )
+        hand = (resultado.multi_hand_landmarks[0])
 
         mp_drawing.draw_landmarks(
             image= frame, 
@@ -358,66 +219,71 @@ while True:
             landmark_drawing_spec =estilo_puntos ,
             connection_drawing_spec= estilo_coneccion
         )
+
+        #ver los 63 datos
 		
-        #ejecutar ramdom forest cada n frames
-        if (
-            contador_frames
-            % PROCESAR_CADA_N_FRAMES
-            == 0
-        ):
+        datos =[]
+        for lm in hand.landmark:
+            datos.extend([
+                lm.x,
+                lm.y,
+                lm.z
+            ])
+            #crear filas con igualdad de columnas
+        datos_df = pd.DataFrame(
+            [datos],
+            columns=columnas
+        )
 
-            clase_modelo = predecir_clase(
-                hand
-            )
+        #predicicon del modelo 
+        letra = modelo.predict(
+            datos_df
+        )[0]
 
-            resultado_validado = aplicar_regla_b(
-                clase_modelo,
-                hand
-            )
+        letra = str(
+            letra
+        ).strip().upper()
 
-            historial_resultados.append(
-                resultado_validado
-            )
+        #validacion de la b
+        if letra == "B":
 
-            resultado_final = (
-                obtener_resultado_estable(
-                    historial_resultados
-                )
-            )
+            if es_b_valida(hand):
+                resultado_final = "B "
+
+            else:
+               resultado_final = "B INCORRECTA "
+
+        #validamos o
+        elif letra == "O":
+
+            if es_o_valida(hand):
+                resultado_final = "O"
+
+            else:
+                resultado_final = "O INCORRECTA"
+
+        #las clases que quedan
         else:
-            historial_resultados.clear()
-            resultado_final = "SIN MANO"
-
-        if resultado_final in {
-              "SIN MANO",
-             "B INCORRECTA"
-         }:
-
-         # Rojo para advertencia
-          color_texto = (0, 0,255)
-
-        else:
-           # Verde para clases reconocidas
-           color_texto = ( 0, 220,0 )
+            resultado_final = letra
+    
+        #mostrar el resultado
 
         cv2.putText(
             frame,
             resultado_final,
-            (20,80),
+            (50,150),
             cv2.FONT_HERSHEY_SIMPLEX,
-            1.2,
-            color_texto,
-            4
+            2,
+            (0, 0, 255),
+            5
         )  
 
     cv2.imshow(
-     "LASIC - Reconocimiento LSC",
+     "Reconocimiento LSC",
      frame
-   )
+    )
 
-    tecla = cv2.waitKey(1) & 0xFF
-
-    if tecla== 27:
+    if cv2.waitKey(1) & 0xFF == 27:
         break
   
 # cerrar todo 

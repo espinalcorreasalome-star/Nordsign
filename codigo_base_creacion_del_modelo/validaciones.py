@@ -12,14 +12,14 @@ UMBRAL_DEDO_RECTO_B= 170
 UMBRAL_O= 0.45
 
 #funcion matematica base
-def distancia_landmarks(hand_landmarks,i,j):
-    p1 = hand_landmarks.landmarks[i]
-    p2 = hand_landmarks.landmarks[j]
+def distancia_landmarks(hand_landmarks, i, j):
+    p1 = hand_landmarks.landmark[i]
+    p2 = hand_landmarks.landmark[j]
 
     return math.sqrt(
-        (p1.x - p2.x)**2
-        +(p1.y - p2.y)**2
-        +(p1.z - p2.z)**2
+        (p1.x - p2.x) ** 2
+        + (p1.y - p2.y) ** 2
+        + (p1.z - p2.z) ** 2
     )
 
 def angulo_entre_puntos(
@@ -28,44 +28,39 @@ def angulo_entre_puntos(
           punto_b,
           punto_c
 ):
-    a= hand_landmarks.landmarks[punto_a]
-    b= hand_landmarks.landmarks[punto_b]
-    c = hand_landmarks.landmarks[punto_c]
+    a= hand_landmarks.landmark[punto_a]
+    b= hand_landmarks.landmark[punto_b]
+    c = hand_landmarks.landmark[punto_c]
 
     #vector que va desde b hacia a 
     vector_ba= (
         a.x - b.x,
         a.y - b.y,
-        a.z - b.z
     )
 
     #vector que va desde b hacia c
     vector_bc = (
         c.x - b.x,
         c.y - b.y,
-        c.z - b.z
     ) 
 
     producto_punto = (
         vector_ba[0] * vector_bc[0]
         + vector_ba[1] * vector_bc[1]
-        +vector_ba[2] * vector_bc[2]
     )
 
     magnitud_ba = math.sqrt(
         vector_ba[0] **2
         + vector_ba[1] **2
-        + vector_ba[2] **2
     )
 
     magnitud_bc = math.sqrt(
         vector_bc[0] **2
         + vector_bc[1] **2
-        + vector_bc[2] **2
     )
 
     if magnitud_ba == 0 or magnitud_bc ==0: # pa que no divida entre 0
-        return 0.0
+        return 0
     
     coseno = producto_punto/(
         magnitud_ba * magnitud_bc
@@ -76,192 +71,201 @@ def angulo_entre_puntos(
         min(1.0, coseno)
     )
 
-    angulo_radianes = math.acos(coseno)
 
     return math.degrees(
-        angulo_radianes
+        math.acos(coseno)
     )
 
-def obtener_ancho_palma(hand_landmarks):
-    return distancia_landmarks(
+def dedos_rectos_b(hand_landmarks):
+    umbral_articulacion_inferior = 155
+    umbral_articulacion_superior = 150
+
+    dedos={
+        "indice":(5,6,7,8),
+        "medio":(9,10,11,12),
+        "anular":(13,14,15,16),
+        "meñique":(17,18,19,20)
+    }
+    resultados=[]
+
+    for nombre, puntos in dedos.items():
+        base, articulacion_1, articulacion_2, punta = puntos
+
+        angulo_inferior = angulo_entre_puntos(
+            hand_landmarks,
+            base,
+            articulacion_1,
+            articulacion_2
+        )
+
+        angulo_superior = angulo_entre_puntos(
+            hand_landmarks,
+            articulacion_1,
+            articulacion_2,
+            punta
+        )
+
+        if nombre == "menique":
+            umbral_inferior = 145
+            umbral_superior = 140
+        else:
+            umbral_inferior = 155
+            umbral_superior = 150
+
+        dedo_recto =(
+            angulo_inferior >= umbral_inferior
+            and angulo_superior >= umbral_superior
+        )
+
+        resultados.append(
+            dedo_recto
+        )
+
+        print(
+            f"{nombre}: "
+            f"{angulo_inferior:.1f} /"
+            f"{angulo_superior:.1f}="
+            f"{dedo_recto}"
+        )
+        return all(resultados)
+
+def dedos_juntos_b(hand_landmarks):
+    ancho_palma =distancia_landmarks(
         hand_landmarks,
         5,
         17
     )
 
-def obtener_angulos_dedos(hand_landmarks):
-    return{
+    if ancho_palma<=0:
+        return False
+    
+    distancia_8_12 = distancia_landmarks(
+        hand_landmarks,
+        8,
+        12
+    )
 
-        "indice": min(
-            angulo_entre_puntos(
-                hand_landmarks,
-                5,6,7
-            ),
-            angulo_entre_puntos(
-                hand_landmarks,6,7,8
-            )
-        ),
+    distancia_12_16= distancia_landmarks(
+        hand_landmarks,
+        12,
+        16
+    )
 
-        "medio": min(
-            angulo_entre_puntos(
-                hand_landmarks,
-                9,10,11
-            ),
-            angulo_entre_puntos(
-                hand_landmarks,
-                10,11,12
-            )
-        ),
 
-        "anular":min(
-            angulo_entre_puntos(
-                hand_landmarks,
-                13,14,15
-            ),
-            angulo_entre_puntos(
-                hand_landmarks,
-                14,15,16
-            )
-        ),
-        "meñique":min(
-            angulo_entre_puntos(
-                hand_landmarks,
-                17,18,19
-            ),
-            angulo_entre_puntos(
-                hand_landmarks,
-                18,19,20
-            )
-        )
-    }
+    distancia_7_11 = distancia_landmarks(
+        hand_landmarks,
+        7,
+        11
+    )
+
+    distancia_11_15= distancia_landmarks(
+        hand_landmarks,
+        11,
+        15
+    )
+
+
+    limite_articulaciones = ancho_palma*0.43
+    limite_puntas = ancho_palma *0.65
+
+    articulaciones_juntas= (
+        distancia_7_11 <= limite_articulaciones
+        and distancia_11_15 <= limite_articulaciones
+    )
+
+    puntas_juntas =(
+        distancia_8_12 <= limite_puntas
+        and distancia_12_16 <= limite_puntas
+    )
+
+    return(
+        articulaciones_juntas
+        and puntas_juntas
+    )
+
+def pulgar_dentro_b(hand_landmarks):
+
+    ancho_palma =distancia_landmarks(
+        hand_landmarks,
+        5,
+        17
+    )
+
+    if ancho_palma == 0:
+        return False
+    
+    distancia_4_5 = distancia_landmarks(
+        hand_landmarks,
+        4,
+        5
+    )
+
+    distancia_4_13 = distancia_landmarks(
+        hand_landmarks,
+        4,
+        13
+    )
+
+    distancia_4_17 = distancia_landmarks(
+        hand_landmarks,
+        4,
+        17
+    )
+
+    limite = ancho_palma * 0.90
+
+    return(
+        distancia_4_5 <= limite
+        or distancia_4_13 <= limite
+        or distancia_4_17 <= limite
+    )
 
 def diagnostico_b(hans_landmarks):
-    landmarks= hans_landmarks.landmark
-    ancho_palma= obtener_ancho_palma(
+    regla_rectos = dedos_rectos_b(
         hans_landmarks
     )
 
-    if ancho_palma <= 0:
-        return{
-            "dedos_rectos":False,
-            "dedos_juntos" :False,
-            "pulgar_dentro":False,
-            "b_valida":False,
-            "angulos":{},
-            "distancias":{}
-        }
-   
-    # 1 primera regla dedos rectos 
-    angulos= obtener_angulos_dedos( 
+    regla_juntos = dedos_juntos_b(
         hans_landmarks
     )
 
-    dedos_rectos_por_angulo = all(
-        valor >= UMBRAL_DEDO_RECTO_B
-        for valor in angulos.values()
-    )
-    
-    dedos_hacia_arriba = (
-        landmarks[8].y < landmarks[6].y
-        and landmarks[12].y < landmarks[10].y
-        and landmarks[16].y < landmarks[14].y
-        and landmarks[20].y < landmarks[18].y
+    regla_pulgar = pulgar_dentro_b(
+        hans_landmarks
     )
 
-    dedos_rectos=(
-        dedos_rectos_por_angulo
-        and dedos_hacia_arriba
-    )
-    # 2 segund regla  dedos juntos 
-    distancia_8_12=(
-        distancia_landmarks(
-            hans_landmarks,
-            8,
-            12
-        )/ ancho_palma
-    )
-    
-    distancia_12_16=(
-        distancia_landmarks(
-            hans_landmarks,
-            12,
-            16
-        )/ ancho_palma
-    )
-
-    distancia_16_20 =(
-        distancia_landmarks(
-            hans_landmarks,
-            16, 
-            20
-        )/ ancho_palma
-    )
-
-    dedos_juntos=(
-        distancia_8_12 <= UMBRAL_DEDOS_JUNTOS_B
-        and distancia_12_16 <= UMBRAL_DEDOS_JUNTOS_B
-        and distancia_16_20 <= UMBRAL_DEDOS_JUNTOS_B
-    )
-
-    #3 tercera regla pulgar andentro de l aplma 
-    distancia_4_13 = (
-         distancia_landmarks( 
-             hans_landmarks,
-             4,
-             13 
-        ) / ancho_palma 
-    )
-
-    distancia_4_17 = (
-         distancia_landmarks( 
-             hans_landmarks,
-             4,
-             17 
-        ) / ancho_palma
-     )
-    
-    pulgar_dentro = (
-         distancia_4_13
-         <= UMBRAL_PULGAR_DENTRO_B
-        
-        or distancia_4_17
-        <= UMBRAL_PULGAR_DENTRO_B 
-    )
-
-    b_valida = (
-         dedos_rectos
-        and dedos_juntos
-        and pulgar_dentro 
+    b_valida =(
+        regla_rectos
+        and regla_juntos
+        and regla_pulgar
     )
 
     return {
-         "dedos_rectos": dedos_rectos,
-         "dedos_juntos": dedos_juntos,
-         "pulgar_dentro": pulgar_dentro,
-         "b_valida": b_valida,
+        "valida": b_valida,
+        "dedos_rectos": regla_rectos,
+        "dedos_juntos": regla_juntos,
+        "pulgar_dentro": regla_pulgar
+    }
 
-         "angulos": angulos,
+def es_b_valida(hand_landmarks):
+    resultado = diagnostico_b(hand_landmarks)
 
-         "distancias": { 
-             "8-12": distancia_8_12,
-             "12-16": distancia_12_16, 
-             "16-20": distancia_16_20, 
-             "4-13": distancia_4_13, 
-             "4-17": distancia_4_17 
-            } 
-   }
-
-def es_b_valida (hand_landmarks):
-    return diagnostico_b(
-        hand_landmarks
-    )["es_b_valida"]
-
+    print(
+        "B"
+        f"rectos:{resultado['dedos_rectos']} "
+        f"juntos:{resultado['dedos_juntos']} "
+        f"pulgar:{resultado['pulgar_dentro']} ",
+        end="\r"
+    )
+    return resultado["valida"]
+    
 # letra 0
 
 def diagnostico_o(hand_landmarks):
-    ancho_palma = obtener_ancho_palma(
-         hand_landmarks 
-    ) 
+    ancho_palma =distancia_landmarks(
+        hand_landmarks,
+        5,
+        17
+    )
 
     if ancho_palma <= 0:
         return {
