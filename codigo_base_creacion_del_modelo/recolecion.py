@@ -79,7 +79,7 @@ if not os.path.exists(ARCHIVO_CSV):
                 f"z{i}"
             ]
 
-        header.append("palabra")
+        header.append("letra")
         writer.writerow(header)
         
 # mostrar clases existentes 

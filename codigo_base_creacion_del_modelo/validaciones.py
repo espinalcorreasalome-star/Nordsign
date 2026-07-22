@@ -1,12 +1,8 @@
 import math
+# false para el demo 
+# true para ver las reglas en terminal 
+MODO_DIAGNOSTICO= False
 #validaciones geometricas para lasic
-
-#Umbrales 
-
-#letra b:
-UMBRAL_DEDOS_JUNTOS_B = 0.80
-UMBRAL_PULGAR_DENTRO_B= 0.95
-UMBRAL_DEDO_RECTO_B= 170
 
 #letra o
 UMBRAL_O= 0.45
@@ -77,14 +73,11 @@ def angulo_entre_puntos(
     )
 
 def dedos_rectos_b(hand_landmarks):
-    umbral_articulacion_inferior = 155
-    umbral_articulacion_superior = 150
 
     dedos={
         "indice":(5,6,7,8),
         "medio":(9,10,11,12),
         "anular":(13,14,15,16),
-        "meñique":(17,18,19,20)
     }
     resultados=[]
 
@@ -105,29 +98,23 @@ def dedos_rectos_b(hand_landmarks):
             punta
         )
 
-        if nombre == "menique":
-            umbral_inferior = 145
-            umbral_superior = 140
-        else:
-            umbral_inferior = 155
-            umbral_superior = 150
-
         dedo_recto =(
-            angulo_inferior >= umbral_inferior
-            and angulo_superior >= umbral_superior
+            angulo_inferior >= 155
+            and angulo_superior >= 150
         )
 
         resultados.append(
             dedo_recto
         )
 
-        print(
+        if MODO_DIAGNOSTICO:
+              print(
             f"{nombre}: "
             f"{angulo_inferior:.1f} /"
             f"{angulo_superior:.1f}="
             f"{dedo_recto}"
         )
-        return all(resultados)
+    return all(resultados)
 
 def dedos_juntos_b(hand_landmarks):
     ancho_palma =distancia_landmarks(
@@ -138,6 +125,8 @@ def dedos_juntos_b(hand_landmarks):
 
     if ancho_palma<=0:
         return False
+    
+    #puntas de los dedos 
     
     distancia_8_12 = distancia_landmarks(
         hand_landmarks,
@@ -151,6 +140,7 @@ def dedos_juntos_b(hand_landmarks):
         16
     )
 
+    #articulaciones 
 
     distancia_7_11 = distancia_landmarks(
         hand_landmarks,
@@ -249,12 +239,12 @@ def diagnostico_b(hans_landmarks):
 def es_b_valida(hand_landmarks):
     resultado = diagnostico_b(hand_landmarks)
 
-    print(
+    if MODO_DIAGNOSTICO:
+        print(
         "B"
         f"rectos:{resultado['dedos_rectos']} "
         f"juntos:{resultado['dedos_juntos']} "
         f"pulgar:{resultado['pulgar_dentro']} ",
-        end="\r"
     )
     return resultado["valida"]
     

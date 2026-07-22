@@ -7,7 +7,7 @@ import pandas as pd
 
 from validaciones import(
     es_b_valida,
-    es_o_valida
+  #  es_o_valida
 )
 
 #configuracion
@@ -248,19 +248,19 @@ while True:
         if letra == "B":
 
             if es_b_valida(hand):
-                resultado_final = "B "
+                resultado_final = "B"
 
             else:
-               resultado_final = "B INCORRECTA "
+               resultado_final = "no reconocida"
 
         #validamos o
-        elif letra == "O":
+       # elif letra == "O":
 
-            if es_o_valida(hand):
-                resultado_final = "O"
+        #    if es_o_valida(hand):
+         #       resultado_final = "O"
 
-            else:
-                resultado_final = "O INCORRECTA"
+          #  else:
+           #     resultado_final = "no reconocida"
 
         #las clases que quedan
         else:
