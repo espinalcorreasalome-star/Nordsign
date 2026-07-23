@@ -42,6 +42,11 @@ from tema import(
     TEXTO_LISTO
 )
 
+from camara import Camara
+
+import cv2
+from PIL import Image, ImageTk
+
 #rutas
 
 DEMO_DIR = os.path.dirname(
@@ -78,6 +83,8 @@ class AplicacionLasic(ctk.CTk):
         self._crear_barra_superior()
         self._crear_panel_lateral()
         self._crear_panel_derecho()
+        self.camara = Camara()
+        self.camara_activa = False
 
     def _configurar_ventana(self):
         self.title(
@@ -290,7 +297,7 @@ class AplicacionLasic(ctk.CTk):
             hover_color=COLOR_BOTON_INICIAR_HOVER,
             text_color=COLOR_TEXTO_CLARO,
             font=FUENTE_BOTON,
-            command=self._prueba_iniciar
+            command=self._iniciar_camara
         )
 
         self.boton_iniciar.grid(
@@ -310,7 +317,7 @@ class AplicacionLasic(ctk.CTk):
             hover_color=COLOR_BOTON_FINALIZAR_HOVER,
             text_color=COLOR_TEXTO_OSCURO,
             font=FUENTE_BOTON,
-            command=self._prueba_finalizar
+            command=self._finalizar_camara
         )
 
         self.boton_finalizar.grid(
@@ -473,6 +480,58 @@ class AplicacionLasic(ctk.CTk):
         self.resultado_label.configure(
             text=TEXTO_ESPERANDO
         )
+
+    def _iniciar_camara(self):
+        if self.camara_activa:
+            return
+    
+        if self.camara.abrir():
+            self.camara_activa = True
+            self.actualizar_video()
+
+    def _finalizar_camara(self):
+        self.camara_activa = False
+
+        self.camara.cerrar()
+
+        self.vista_camara.configure(
+            image=None,
+            text="Cámara apagada"
+        )
+
+    def actualizar_video(self):
+        if not self.camara_activa:
+            return
+
+        frame= self.camara.leer()
+
+        if frame is not None:
+
+            frame= cv2.cvtColor(
+                frame,
+                cv2.COLOR_BGR2RGB
+            )
+
+            imagen = Image.fromarray(frame)
+
+            imagen = imagen.resize(
+            (700, 470)
+            )
+
+            foto = ImageTk.PhotoImage(imagen)
+
+            self.vista_camara.configure(
+            image=foto,
+            text=""
+            )
+
+            self.vista_camara.image = foto
+
+        self.after(
+             15,
+            self.actualizar_video
+        )
+
 
 if __name__ == "__main__":
     app = AplicacionLasic()
