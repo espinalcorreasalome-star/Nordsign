@@ -6,6 +6,7 @@ from PIL import Image
 from camara import Camara
 from reconocimiento import ReconocedorLSC
 
+from rutas import ruta_recurso
 from tema import(
     COLOR_FONDO,
     COLOR_BARRA_SUPERIOR,
@@ -57,8 +58,9 @@ RECURSOS_DIR = os.path.join(
     "recursos"
 )
 
-ARCHIVO_LOGO = os.path.join(
-    RECURSOS_DIR,
+ARCHIVO_LOGO = ruta_recurso(
+    "demo",
+    "recursos",
     "logo_lasic_circular.png"
 )
 

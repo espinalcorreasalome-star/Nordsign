@@ -5,6 +5,7 @@ import cv2
 import joblib
 import mediapipe as mp
 import pandas as pd
+from rutas import ruta_recurso
 
 DEMO_DIR = os.path.dirname(
     os.path.abspath(__file__)
@@ -14,8 +15,7 @@ BASE_DIR = os.path.dirname(
     DEMO_DIR
 )
 
-ARCHIVO_MODELO = os.path.join(
-    BASE_DIR,
+ARCHIVO_MODELO = ruta_recurso(
     "modelo_lsc.pkl"
 )
 
