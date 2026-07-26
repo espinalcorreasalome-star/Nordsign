@@ -40,6 +40,20 @@ LASIC is a system developed in Python that recognizes different signs of Colombi
 | Pillow | Image conversion |
 | CustomTkinter | Graphical User Interface (GUI) |
 
+## Download the program
+
+You can download the executable version for Windows from the releases section:
+
+[**Download LASIC for Windows**](https://github.com/espinalcorreasalome-star/Nordsign/releases/tag/v1.0.0)
+
+### Usage Instructions
+
+1. Download LASIC-Windows-v1.0.zip.
+2. Extract the folder completely.
+3. Open the LASIC folder.
+4. Run LASIC.exe.
+
+> The executable must remain alongside the _internal folder and the other included files.
 
 # Installation
 
