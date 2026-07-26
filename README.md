@@ -1,5 +1,5 @@
 # LASIC
-<p aling ="center">
+<p align ="center">
     <img src="demo/recursos/logo_lasic_circular.png" width=220>
 </p>
 
@@ -13,13 +13,10 @@ Project developed to strengthen the inclusion of the Colombian deaf community.
 
 </p>
 
-______________________________________________________________________________________________
 
-# Description
 
 LASIC is a system developed in Python that recognizes different signs of Colombian Sign Language (LSC) using Computer Vision and Artificial Intelligence. The system captures real-time video through a webcam, detects the hand using MediaPipe Hands, and classifies the sign performed using a Machine Learning model based on Random Forest trained with custom data.
 
-______________________________________________________________________________________________
 
 # Features 
 
@@ -30,7 +27,6 @@ ________________________________________________________________________________
 - Real-time processing.
 - Modular architecture.
 
-______________________________________________________________________________________________
 
 # Technologies Used
 
@@ -44,7 +40,6 @@ ________________________________________________________________________________
 | Pillow | Image conversion |
 | CustomTkinter | Graphical User Interface (GUI) |
 
-______________________________________________________________________________________________
 
 # Installation
 
@@ -66,8 +61,6 @@ pip install -r requirements.txt
 python demo/app.py
 ```
 
-______________________________________________________________________________________________
-
 # Current Status
 
 The system currently recognizes various basic signs of Colombian Sign Language.
@@ -80,7 +73,6 @@ The project is still under development, and future versions will include:
 - Full-word recognition.
 - Feedback for learning.
 
-______________________________________________________________________________________________
 
 # License
 
