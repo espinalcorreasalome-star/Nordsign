@@ -1,0 +1,29 @@
+# entornos virtuales de python
+.venv/
+vent/
+env/
+
+# cahe y archivos copilados de python
+_pycache_/
+*.py[cod]
+*$py.class
+
+# archivos generados por pyinstaller 
+build/
+dist/
+*.spec
+*.exe
+
+# configuracion local del editor 
+.vscode/
+.idea/
+
+# aechivos del sistema operativo
+Thumbs.db
+.DS_Store
+
+# archivos temporales 
+*.log
+*.tmp
+*.bak
+.pytrst_cache/
