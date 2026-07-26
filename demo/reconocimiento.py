@@ -251,30 +251,29 @@ class ReconocedorLSC:
         return datos
     # predecir letra 
     def predecir_letra(self,hand_landmarks):
-     datos = self.extraer_lamdmarks(
+       datos = self.extraer_landmarks(
           hand_landmarks
         )
 
-     if len(datos) != len(self.columnas):
-      raise ValueError(
-      "La cantidad de landmarks no coincide con "
-      "las características del modelo.\n"
-      f"Datos detectados: {len(datos)}\n"
-      f"Datos esperados: {len(self.columnas)}"    
-     )
-     
-     datos_df = pd.DataFrame(
-      [datos],
-      columns=self.columnas
-     )
+       if len(datos) != len(self.columnas):
+          raise ValueError(
+             "La cantidad de landmarks no coincide con "
+            "las características del modelo.\n"
+            f"Datos detectados: {len(datos)}\n"
+            f"Datos esperados: {len(self.columnas)}"    
+        )
+       datos_df = pd.DataFrame(
+          [datos],
+         columns=self.columnas
+        )
+       
+       letra = self.modelo.predict(
+           datos_df
+        )[0]
 
-     letra = self.modelo.prefict(
-      datos_df
-     )[0]
-
-     return str(
-      letra
-     ).strip().upper()
+       return str(
+           letra
+        ).strip().upper() 
     #aplicamos validaciones 
     @staticmethod
     def validar_resultado(
@@ -289,14 +288,10 @@ class ReconocedorLSC:
       
       return letra
     #procesamos los fotogramas 
-    def procesar_frames(self, frame):
+    def procesar_frame(self, frame):
      if frame is None:
-         return None, "",False
+         return None, None,False
     
-     frame = cv2.flip(
-         frame,
-         1
-        )
 
      frame_rgb = cv2.cvtColor(
          frame,
@@ -312,7 +307,7 @@ class ReconocedorLSC:
      frame_rgb.flags.writeable = True
 
      if not resultado_mediapipe.multi_hand_landmarks:
-          return frame, "", False
+          return frame, None, False
 
      hand_landmarks = (
          resultado_mediapipe
@@ -348,10 +343,12 @@ class ReconocedorLSC:
 
 if __name__ == "__main__":
     reconocedor = ReconocedorLSC()
-
-    print("\nPrueba completada.")
-    print(
-        "El modelo y MediaPipe se cargaron correctamente."
-    )
-
     reconocedor.cerrar()
+    print(
+    "Métodos del reconocedor:",
+    [
+        nombre
+        for nombre in dir(ReconocedorLSC)
+        if not nombre.startswith("__")
+    ]
+)

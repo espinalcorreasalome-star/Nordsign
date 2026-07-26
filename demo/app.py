@@ -1,7 +1,10 @@
 import os
-
+import cv2
 import customtkinter as ctk
+
 from PIL import Image
+from camara import Camara
+from reconocimiento import ReconocedorLSC
 
 from tema import(
     COLOR_FONDO,
@@ -42,10 +45,6 @@ from tema import(
     TEXTO_LISTO
 )
 
-from camara import Camara
-
-import cv2
-from PIL import Image, ImageTk
 
 #rutas
 
@@ -84,7 +83,15 @@ class AplicacionLasic(ctk.CTk):
         self._crear_panel_lateral()
         self._crear_panel_derecho()
         self.camara = Camara()
+        self.reconocedor = ReconocedorLSC()
         self.camara_activa = False
+        self.imagen_video = None
+        self.id_actualizacion = None
+        self.cerrando = False
+        self.protocol(
+            "WM_DELETE_WINDOW",
+            self.cerrar_aplicacion
+        )
 
     def _configurar_ventana(self):
         self.title(
@@ -102,24 +109,6 @@ class AplicacionLasic(ctk.CTk):
 
         self.configure(
             fg_color=COLOR_FONDO
-        )
-
-   
-        self.title(
-            TITULO_APLICACION
-        )
-
-        self.geometry(
-            f"{ANCHO_VENTANA}x{ALTO_VENTANA}"
-        )
-
-        self.minsize(
-            ANCHO_MINIMO,
-            ALTO_MINIMO
-        )
-
-        self.configure(
-            fg_color = COLOR_FONDO
         )
 
     def _configurar_cuadricula(self):
@@ -434,13 +423,14 @@ class AplicacionLasic(ctk.CTk):
 
         self.panel_resultado.grid_rowconfigure(
             1,
-            weight=1
+            weight=1,
+            minsize=200
         )
 
         self.resultado_titulo = ctk.CTkLabel(
             self.panel_resultado,
             text=TEXTO_RESULTADO,
-            font=FUENTE_RESULTADO_TITULO,
+            font= FUENTE_RESULTADO_TITULO,
             text_color=COLOR_TEXTO_OSCURO
         )
 
@@ -453,14 +443,15 @@ class AplicacionLasic(ctk.CTk):
         self.resultado_label = ctk.CTkLabel(
             self.panel_resultado,
             text=TEXTO_ESPERANDO,
-            font=FUENTE_RESULTADO,
+            font=("arial", 40, "bold"),#FUENTE_RESULTADO,
             text_color=COLOR_TEXTO_ESPERA
         )
 
         self.resultado_label.grid(
             row=1,
             column=0,
-            pady=(0, 20)
+            sticky = "nsew",
+            pady=(0, 12)
         )
 
     def _prueba_iniciar(self):
@@ -482,57 +473,205 @@ class AplicacionLasic(ctk.CTk):
         )
 
     def _iniciar_camara(self):
+        if self.cerrando:
+            return
+        
         if self.camara_activa:
             return
+
+        if self.id_actualizacion is not None:
+            try:
+                self.after_cancel(
+                    self.id_actualizacion
+                )
+            except Exception:
+                pass
+
+            self.id_actualizacion= None
     
-        if self.camara.abrir():
-            self.camara_activa = True
-            self.actualizar_video()
-
-    def _finalizar_camara(self):
-        self.camara_activa = False
-
-        self.camara.cerrar()
-
-        self.vista_camara.configure(
-            image=None,
-            text="Cámara apagada"
-        )
-
-    def actualizar_video(self):
-        if not self.camara_activa:
+        if not  self.camara.abrir():
+            self.estado_label.configure(
+                text = "no se puede abrir la camara"
+            )
             return
 
-        frame= self.camara.leer()
+        self.camara_activa = True
+        self.estado_label.configure(
+            text="camara activa"
+        )
+        self.actualizar_video()
 
-        if frame is not None:
+    def _detener_camara(self): 
+        self.camara_activa= False
 
-            frame= cv2.cvtColor(
-                frame,
+        if self.id_actualizacion is not None:
+            try:
+                self.after_cancel(
+                    self.id_actualizacion
+                )
+            except Exception:
+                pass
+            self.id_actualizacion= None
+        try:
+            self.camara.cerrar()
+        except Exception as error:
+            print(
+                "error cerrando camara:",
+                error
+            )
+
+    def _finalizar_camara(self):
+        self._detener_camara()
+
+        if self.cerrando:
+            return
+        
+        try:
+            self.vista_camara.configure(
+                image =None,
+                text= TEXTO_CAMARA_APAGADA
+            )
+
+            self.resultado_label.configure(
+                text=TEXTO_ESPERANDO
+            )
+
+            self.estado_label.configure(
+                text= TEXTO_LISTO
+            )
+
+        except Exception as error:
+            print(
+                "error limpiando la interfaz:",
+                error
+            )
+        self.imagen_video = None
+
+    def actualizar_video(self):
+        if (
+            not self.camara_activa
+            or self.cerrando
+        ):
+            self.id_actualizacion=None
+            return
+
+        frame = self.camara.leer()
+
+        if frame is None:
+            print("no se pudo leer un fotograma de la camara")
+
+            self._detener_camara()
+            if not self.cerrando:
+                self.estado_label.configure(
+                text = "error leyendo la camara"
+            )
+            return
+
+        try:
+            (
+                frame_procesado,
+                resultado,
+                mano_detectada
+            ) = self.reconocedor.procesar_frame(
+                frame
+            )
+
+            if frame_procesado is None:
+                raise ValueError(
+                    "el reconocedor devolvio el frame vacio"
+                )
+
+            if mano_detectada and resultado :
+                self.resultado_label.configure(
+                    text = str(resultado)
+                )
+
+            else:
+                self.resultado_label.configure(
+                    text= TEXTO_ESPERANDO
+                )
+            frame_rgb = cv2.cvtColor(
+                frame_procesado,
                 cv2.COLOR_BGR2RGB
             )
 
-            imagen = Image.fromarray(frame)
-
-            imagen = imagen.resize(
-            (700, 470)
+            imagen_pil = Image.fromarray(
+                frame_rgb
             )
 
-            foto = ImageTk.PhotoImage(imagen)
+            ancho = self.vista_camara.winfo_width()
+            alto = self.vista_camara.winfo_height()
+
+            if ancho <= 1:
+                ancho = 640
+
+            if alto <= 1:
+                alto = 480
+
+            nueva_imagen = ctk.CTkImage(
+                light_image=imagen_pil,
+                dark_image=imagen_pil,
+                size=(ancho, alto)
+            )
 
             self.vista_camara.configure(
-            image=foto,
-            text=""
+                image=nueva_imagen,
+                text=""
             )
 
-            self.vista_camara.image = foto
+            self.imagen_video = nueva_imagen
 
-        self.after(
-             15,
-            self.actualizar_video
-        )
+        except Exception as error:
+            print(
+                "Error procesando el frame:",
+                repr(error)
+            )
 
+            self._detener_camara()
+
+            if not self.cerrando:
+                try:
+                    self.estado_label.configure(
+                        text="Error en reconocimiento"
+                    )
+                except Exception:
+                    pass
+
+            return
+
+        if self.camara_activa and not self.cerrando:
+            self.id_actualizacion = self.after(
+                 20,
+                 self.actualizar_video
+            )
+        else:
+            self.id_actualizacion = None 
+
+    def cerrar_aplicacion(self):
+        if self.cerrando:
+            return
+        self.cerrando= True
+
+        self._detener_camara()
+
+        try:
+            if hasattr(self,"reconocedor"):
+                self.reconocedor.cerrar()
+        except Exception as error:
+            print(
+                "error cerrando mediapipe:",
+                error
+            )
+
+        try:
+            self.quit()
+
+        except Exception:
+            pass
+
+        self.destroy()
 
 if __name__ == "__main__":
     app = AplicacionLasic()
     app.mainloop()
+

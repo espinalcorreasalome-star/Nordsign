@@ -7,21 +7,37 @@ class Camara:
         self.activa = False
 
     def abrir(self, indice=0):
-        if self.cap is None:
-            self.cap = cv2.VideoCapture(indice)
+        if self.activa:
+            return True
+        
+        if self.cap is not None:
+            self.cerrar()
 
-            if self.cap.isOpened():
-                self.activa= True
-                return True
-        return False
+        self.cap = cv2.VideoCapture(
+            indice,
+            cv2.CAP_DSHOW
+        )
+
+        if not self.cap.isOpened():
+                self.cap.release()
+                self.cap= None
+                self.activa= False
+                return False
+        
+        self.activa= True
+        return True
 
     def leer(self):
-        if not self.activa:
+        if(
+             not self.activa
+             or self.cap is None
+             or not self.cap.isOpened()
+        ):
             return None
 
         ok, frame = self.cap.read()
 
-        if not ok:
+        if not ok or frame is None :
             return None
 
         frame = cv2.flip(frame, 1)
@@ -34,3 +50,4 @@ class Camara:
             self.cap= None
 
         self.activa = False
+
