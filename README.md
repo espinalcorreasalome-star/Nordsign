@@ -3,13 +3,15 @@
     <img src="demo/recursos/logo_lasic_circular.png" width=220>
 </p>
 
-<h3 align="center">
+<h2 align="center">
 Colombian Sign Language Visual Translator using Artificial Intelligence
-</h3> 
+</h2> 
 
 <p align="center">
 
-Project developed to strengthen the inclusion of the Colombian deaf community.
+Hi I'm shalomfrog, and I created **LASIC** as a project for Hack Club's Macondo program. My goal is to do my part in fostering the inclusion of the Deaf community in Colombia by using computer vision to translate sign language in real time.
+
+You can find me on the Hack Club Slack as: `@shalomfrog`
 
 </p>
 
@@ -18,20 +20,17 @@ Project developed to strengthen the inclusion of the Colombian deaf community.
 LASIC is a system developed in Python that recognizes different signs of Colombian Sign Language (LSC) using Computer Vision and Artificial Intelligence. The system captures real-time video through a webcam, detects the hand using MediaPipe Hands, and classifies the sign performed using a Machine Learning model based on Random Forest trained with custom data.
 
 
-# Features 
+<h2> Features </h2>
 
 - Real-time recognition of specific signs.
 - Automatic hand detection using MediaPipe.
 - Classification using Random Forest.
 - Graphical User Interface (GUI) developed with CustomTkinter.
 - Real-time processing.
-- Modular architecture.
 
-
-# Technologies Used
+# libraries used
 
 | Technology | Function / Role |
-|------------|----------|
 | Python | Main language |
 | OpenCV | Video capture and processing |
 | MediaPipe Hands | Hand detection |
@@ -53,23 +52,23 @@ You can download the executable version for Windows from the releases section:
 3. Open the LASIC folder.
 4. Run LASIC.exe.
 
-> The executable must remain alongside the _internal folder and the other included files.
+> the executable must remain alongside the _internal folder and the other included files. If the folder is deleted, the executable will not work.
 
 # Installation
 
-## 1. Clone the repository
+<h2> 1. Clone the repository </h2>
 
 ```bash
 git clone https://github.com/shalomfrog/NORDSIGN.git
 ```
 
-## 2. Install dependencies
+<h2> 2. Install dependencies </h2>
 
 ```bash
 pip install -r requirements.txt
 ```
 
-## 3. Run the application
+<h2> 3. Run the application </h2>
 
 ```bash
 python demo/app.py
@@ -85,7 +84,10 @@ The project is still under development, and future versions will include:
 - Model optimization.
 - Higher accuracy.
 - Full-word recognition.
-- Feedback for learning.
+
+<p align ="center">
+    <img src="demo/recursos/demo.webp" width=220>
+</p>
 
 
 # License
