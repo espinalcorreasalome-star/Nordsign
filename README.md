@@ -31,6 +31,7 @@ LASIC is a system developed in Python that recognizes different signs of Colombi
 # libraries used
 
 | Technology | Function / Role |
+|------------|-----------------|
 | Python | Main language |
 | OpenCV | Video capture and processing |
 | MediaPipe Hands | Hand detection |
