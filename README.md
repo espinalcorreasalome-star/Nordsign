@@ -87,7 +87,7 @@ The project is still under development, and future versions will include:
 - Full-word recognition.
 
 <p align ="center">
-    <img src="demo/recursos/demo.webp" width=220>
+    <img src="demo/recursos/demo.png" width=220>
 </p>
 
 
