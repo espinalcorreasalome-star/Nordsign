@@ -20,17 +20,9 @@ You can find me on the Hack Club Slack as: `@shalomfrog`
 LASIC is a system developed in Python that recognizes different signs of Colombian Sign Language (LSC) using Computer Vision and Artificial Intelligence. The system captures real-time video through a webcam, detects the hand using MediaPipe Hands, and classifies the sign performed using a Machine Learning model based on Random Forest trained with custom data.
 
 
-<h2> Features </h2>
-
-- Real-time recognition of specific signs.
-- Automatic hand detection using MediaPipe.
-- Classification using Random Forest.
-- Graphical User Interface (GUI) developed with CustomTkinter.
-- Real-time processing.
-
 # libraries used
 
-| Technology | Function / Role |
+| Technology | Function  |
 |------------|-----------------|
 | Python | Main language |
 | OpenCV | Video capture and processing |
@@ -87,7 +79,7 @@ The project is still under development, and future versions will include:
 - Full-word recognition.
 
 <p align ="center">
-    <img src="demo/recursos/demo.png" width=220>
+    <img src="demo/recursos/demo.png" width=440>
 </p>
 
 
